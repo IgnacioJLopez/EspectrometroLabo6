@@ -29,4 +29,4 @@ file for each image captured.
 Screenshots
 -------------
 
-<img src="screenshots/main.png" height="400" alt="Screenshot"/> 
+<img src="screenshots/main.jpg" height="400" alt="Screenshot"/> 
