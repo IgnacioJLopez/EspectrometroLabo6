@@ -18,30 +18,30 @@ class MenuFragment: Fragment(){
 
 
     /** AndroidX navigation arguments */
-    private val args: CameraFragmentArgs by navArgs() //con esto recibo datos de otros fragmentos
+    private val args: MenuFragmentArgs by navArgs() //con esto recibo datos de otros fragmentos
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.menu_inicial, container, false)
         val calibIntensidad = view.findViewById(R.id.CalibIntensidad) as Button
         val calibLongOnda = view.findViewById<Button>(R.id.CalibLongOnda)
-        val medicion = view.findViewById<Button>(R.id.Medicion)
+        val alinear = view.findViewById<Button>(R.id.AutoRotar)
 
         calibIntensidad.setOnClickListener(
                 {//actionMenu... hay que configurarla en nav_graph, correrlo y recien ahi aparece en este archivo
-                    Navigation.findNavController(requireActivity(), R.id.fragment_container)
-                            .navigate(MenuFragmentDirections.actionMenuFragmentToCameraFragment(args.cameraId, args.pixelFormat))
+                    println("no hago nada")
                 }
         )
         calibLongOnda.setOnClickListener(
                 {
-                    Navigation.findNavController(requireActivity(), R.id.fragment_container)
-                            .navigate(MenuFragmentDirections.actionMenuFragmentToLongOndaFragment(args.cameraId, args.pixelFormat))
-
+                    //Navigation.findNavController(requireActivity(), R.id.fragment_container)
+                      //      .navigate(MenuFragmentDirections.actionMenuFragmentToLongOndaFragment(args.cameraId, args.pixelFormat))
+                    println("no hago nada")
                 }
         )
-        medicion.setOnClickListener(
+        alinear.setOnClickListener(
                 {
-                    println("hola medido")
+                    Navigation.findNavController(requireActivity(), R.id.fragment_container)
+                            .navigate(MenuFragmentDirections.actionMenuFragmentToAutoRotateFragment(args.cameraId, args.pixelFormat))
                 }
         )
 

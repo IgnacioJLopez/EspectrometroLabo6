@@ -63,6 +63,15 @@
             app:destination="@id/permissions_fragment"
             app:popUpTo="@id/camera_fragment"
             app:popUpToInclusive="true"/>
+        <argument
+            android:name="tita"
+            app:argType="float" />
+        <argument
+            android:name="b"
+            app:argType="float" />
+        <action
+            android:id="@+id/action_camera_fragment_to_longOndaFragment"
+            app:destination="@id/longOndaFragment" />
 
     </fragment>
 
@@ -90,9 +99,6 @@
         android:id="@+id/menuFragment"
         android:name="com.example.android.camera2.basic.fragments.MenuFragment"
         android:label="MenuFragment" >
-        <action
-            android:id="@+id/action_menuFragment_to_camera_fragment"
-            app:destination="@id/camera_fragment" />
         <argument
             android:name="camera_id"
             app:argType="string" />
@@ -100,8 +106,8 @@
             android:name="pixel_format"
             app:argType="integer" />
         <action
-            android:id="@+id/action_menuFragment_to_longOndaFragment"
-            app:destination="@id/longOndaFragment" />
+            android:id="@+id/action_menuFragment_to_autoRotateFragment"
+            app:destination="@id/autoRotateFragment" />
     </fragment>
     <fragment
         android:id="@+id/longOndaFragment"
@@ -116,6 +122,84 @@
         <action
             android:id="@+id/action_longOndaFragment_to_permissions_fragment"
             app:destination="@id/permissions_fragment" />
+        <argument
+            android:name="tita"
+            app:argType="float" />
+        <argument
+            android:name="b"
+            app:argType="float" />
+        <argument
+            android:name="h"
+            app:argType="float[]" />
+        <action
+            android:id="@+id/action_longOndaFragment_to_medicionFragment"
+            app:destination="@id/medicionFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/autoRotateFragment"
+        android:name="com.example.android.camera2.basic.fragments.AutoRotateFragment"
+        android:label="AutoRotateFragment" >
+        <argument
+            android:name="camera_id"
+            app:argType="string" />
+        <argument
+            android:name="pixel_format"
+            app:argType="integer" />
+        <action
+            android:id="@+id/action_autoRotateFragment_to_camera_fragment"
+            app:destination="@id/camera_fragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/medicionFragment"
+        android:name="com.example.android.camera2.basic.fragments.MedicionFragment"
+        android:label="MedicionFragment" >
+        <argument
+            android:name="camera_id"
+            app:argType="string" />
+        <argument
+            android:name="pixel_format"
+            app:argType="integer" />
+        <argument
+            android:name="tita"
+            app:argType="float" />
+        <argument
+            android:name="b"
+            app:argType="float" />
+        <argument
+            android:name="h"
+            app:argType="float[]" />
+        <argument
+            android:name="relacion"
+            app:argType="float" />
+        <action
+            android:id="@+id/action_medicionFragment_to_imagenEspectroFragment"
+            app:destination="@id/imagenEspectroFragment" />
+        <argument
+            android:name="ordenCero"
+            app:argType="integer" />
+    </fragment>
+    <fragment
+        android:id="@+id/imagenEspectroFragment"
+        android:name="com.example.android.camera2.basic.fragments.ImagenEspectroFragment"
+        android:label="ImagenEspectroFragment" >
+        <argument
+            android:name="bitmap"
+            app:argType="android.graphics.Bitmap" />
+        <argument
+            android:name="tita"
+            app:argType="float" />
+        <argument
+            android:name="b"
+            app:argType="float" />
+        <argument
+            android:name="h"
+            app:argType="float[]" />
+        <argument
+            android:name="relacion"
+            app:argType="float" />
+        <argument
+            android:name="ordenCero"
+            app:argType="integer" />
     </fragment>
 
 </navigation>

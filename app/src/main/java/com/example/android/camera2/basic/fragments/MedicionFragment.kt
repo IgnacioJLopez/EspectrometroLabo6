@@ -1,6 +1,6 @@
-
 package com.example.android.camera2.basic.fragments
 
+import androidx.fragment.app.Fragment
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
@@ -24,10 +24,11 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.rotationMatrix
 import androidx.exifinterface.media.ExifInterface
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -40,7 +41,7 @@ import com.example.android.camera.utils.OrientationLiveData
 import com.example.android.camera2.basic.CameraActivity
 import com.example.android.camera2.basic.R
 import com.example.calibrarlongituddeonda.Autorotar
-import com.example.calibrarlongituddeonda.Regresion
+import com.example.calibrarlongituddeonda.CalibrarLongOnda
 import kotlinx.android.synthetic.main.fragment_camera.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -58,35 +59,25 @@ import kotlin.RuntimeException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.pow
+import kotlin.math.sin
 
-class CameraFragment : Fragment() {
-
-    //Defino variables
-    var x = 0
-    val interval = 3_000L
-    var previousMillis = 0L
-    val n = 21
-    var h = FloatArray(3)
-
-    var intensidad = mutableListOf<Double>()
-    var tiempos = mutableListOf<Double>()
-    var intensidadTodos = mutableListOf<Double>()
-    var tiemposTodos = mutableListOf<Double>()
-
-    lateinit var m : DoubleArray
-    lateinit var matrix : Matrix
-    var alto = 1
-    var halto = 1
-    lateinit var bitmapRotado : Bitmap
-    var intens = 0
-    var aargb = 0
-
+class MedicionFragment: Fragment() {
+    //declaro e inicio variables
+    var tita = 0f //si se llama tita. deberia ser mas descriptivo
+    var posHorizontalEspectro = 0f
+    var valor = FloatArray(1000) //wtf esto es el vector con las intensidades
+    lateinit var pixeles: FloatArray
+    var alto =  100
+    lateinit var canvasParaEditar: Canvas //para enchular los bitmaps hay que hacer esto
+    lateinit var poneleColor: Paint //para ponerle colores
+    lateinit var  myBitmap: Bitmap
 
 
     /** AndroidX navigation arguments */
-    private val args: CameraFragmentArgs by navArgs()
-
+    private val args: MedicionFragmentArgs by navArgs()
 
     /** Host's navigation controller */
     private val navController: NavController by lazy {
@@ -147,8 +138,6 @@ class CameraFragment : Fragment() {
     /** Live data listener for changes in the device orientation relative to the camera */
     private lateinit var relativeOrientation: OrientationLiveData
 
-
-
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
@@ -193,11 +182,14 @@ class CameraFragment : Fragment() {
         btn_mostrar.setOnClickListener(
                 {
                     Navigation.findNavController(requireActivity(), R.id.fragment_container)
-                            .navigate(CameraFragmentDirections.actionCameraFragmentToLongOndaFragment(args.cameraId, args.pixelFormat, args.tita, args.b, h))
+                      .navigate(MedicionFragmentDirections
+                       .actionMedicionFragmentToImagenEspectroFragment(myBitmap, args.tita, args.b, args.h, args.relacion, args.ordenCero))
 
                 }
         )
     }
+
+
 
     /**
      * Begin all camera operations in a coroutine in the main thread. This function:
@@ -236,70 +228,41 @@ class CameraFragment : Fragment() {
             // Disable click listener to prevent multiple requests simultaneously in flight
             it.isEnabled = false
 
-            //Loop de 20 fotos
-            x = -1
-            while (x<n-1) {
-                if (System.currentTimeMillis()-previousMillis >= interval){ //le doy un intervalo de pausa
-                    previousMillis = System.currentTimeMillis()
-                    x++
 
-                    // Perform I/O heavy operations in a different scope
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        takePhoto().use { result ->
-                            Log.d(TAG, "Result received: $result")
 
-                            // Save the result to disk
-                            val output = saveResult(result)
-                            Log.d(TAG, "Image saved: ${output.absolutePath}")
 
-                            /**
-                            // If the result is a JPEG file, update EXIF metadata with orientation info
-                            if (output.extension == "jpg") {
-                            val exif = ExifInterface(output.absolutePath)
-                            exif.setAttribute(
-                            ExifInterface.TAG_ORIENTATION, result.orientation.toString())
-                            exif.saveAttributes()
-                            Log.d(TAG, "EXIF metadata saved: ${output.absolutePath}")
-                            }
+            // Perform I/O heavy operations in a different scope
+            lifecycleScope.launch(Dispatchers.IO) {
+                takePhoto().use { result ->
+                    Log.d(TAG, "Result received: $result")
 
-                            // Display the photo taken to user
-                            lifecycleScope.launch(Dispatchers.Main) {
-                            navController.navigate(CameraFragmentDirections
-                            .actionCameraToJpegViewer(output.absolutePath)
-                            .setOrientation(result.orientation)
-                            .setDepth(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                            result.format == ImageFormat.DEPTH_JPEG))
-                            }*/
-                        }
+                    // Save the result to disk
+                    val output = saveResult(result)
+                    Log.d(TAG, "Image saved: ${output.absolutePath}")
 
-                        // Re-enable click listener after photo is taken
-                        it.post { it.isEnabled = true }
+                    /**
+                    // If the result is a JPEG file, update EXIF metadata with orientation info
+                    if (output.extension == "jpg") {
+                    val exif = ExifInterface(output.absolutePath)
+                    exif.setAttribute(
+                    ExifInterface.TAG_ORIENTATION, result.orientation.toString())
+                    exif.saveAttributes()
+                    Log.d(TAG, "EXIF metadata saved: ${output.absolutePath}")
                     }
 
-
-
+                    // Display the photo taken to user
+                    lifecycleScope.launch(Dispatchers.Main) {
+                    navController.navigate(CameraFragmentDirections
+                    .actionCameraToJpegViewer(output.absolutePath)
+                    .setOrientation(result.orientation)
+                    .setDepth(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                    result.format == ImageFormat.DEPTH_JPEG))
+                    }*/
                 }
+
+                // Re-enable click listener after photo is taken
+                it.post { it.isEnabled = true }
             }
-
-	    //Acá se realiza la regresion lineal, la regresion cuadratica 
-	    //y se crea la funcion de la correcion de intensidad
-
-            val regresion = Regresion()
-            val p = regresion.getPolynomialFitter(tiempos, intensidad,1)
-            val Kas = mutableListOf<Double>()
-            val nuevasIntens = mutableListOf<Double>()
-
-            for (i in 0 until tiemposTodos.size) {
-                if (intensidadTodos[i] > 150){
-                    Kas.add((tiemposTodos[i]*p[1]+p[0])/intensidadTodos[i])
-                    nuevasIntens.add(intensidadTodos[i])
-                }
-            }
-            var hDouble = regresion.getPolynomialFitter(nuevasIntens, Kas, 2)
-            h[0] = (hDouble[0]).toFloat()
-            h[1] = (hDouble[1]).toFloat()
-            h[2] = (hDouble[2]).toFloat()
-
 
         }
     }
@@ -318,6 +281,7 @@ class CameraFragment : Fragment() {
                 Log.w(TAG, "Camera $cameraId has been disconnected")
                 requireActivity().finish()
             }
+
             override fun onError(device: CameraDevice, error: Int) {
                 val msg = when(error) {
                     ERROR_CAMERA_DEVICE -> "Fatal (device)"
@@ -358,14 +322,11 @@ class CameraFragment : Fragment() {
         }, handler)
     }
 
-    //Inicializo unas var
-    var exposureTime = 100_000_000L
-    private val frac : Long = 30_000_000L
 
     /**
      * Helper function used to capture a still image using the [CameraDevice.TEMPLATE_STILL_CAPTURE]
      * template. It performs synchronization between the [CaptureResult] and the [Image] resulting
-     * from the single capture, ancd outputs a [CombinedCaptureResult] object.
+     * from the single capture, and outputs a [CombinedCaptureResult] object.
      */
     private suspend fun takePhoto():
             CombinedCaptureResult = suspendCoroutine { cont ->
@@ -385,33 +346,11 @@ class CameraFragment : Fragment() {
         val captureRequest = session.device.createCaptureRequest(
                 CameraDevice.TEMPLATE_STILL_CAPTURE).apply { addTarget(imageReader.surface) }
 
-
-        //Leo el rango de texp posible y defino los limites
-        val rangoS = characteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)
-        val tmin= rangoS?.lower
-        val tmax = rangoS?.upper
-        var t = tmin?.let { tmax?.minus(it) }?.div(n) //Es redundante ahora, pero en algunos casos sirve
-
+        
         captureRequest.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
-       
-        //Defino los texp que usaré
-        if (x < n/2) {
-            t = tmin?.let { frac.minus(it) }?.div(n/2)
-            if (tmin != null && t != null) {
-                exposureTime = tmin+ t *x
-            }
-        } else if (x < n ) {
-            t = frac.let { tmax?.minus(it) }?.div(n/2)
-            if (tmin != null && t != null) {
-                exposureTime = frac+ t *(x-n/2)
-            }
-        }
-
-        //Lo seteo
+        val exposureTime = 100_000_000L
         captureRequest.set(CaptureRequest.SENSOR_EXPOSURE_TIME, exposureTime) // en nanoSec
         captureRequest.set(CaptureRequest.SENSOR_SENSITIVITY, 100) //algo fijo
-
-        //ajustar AWB y AF al modo OFF
         captureRequest.set(CaptureRequest.CONTROL_AWB_LOCK, false )
         captureRequest.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
 
@@ -481,6 +420,10 @@ class CameraFragment : Fragment() {
         }, cameraHandler)
     }
 
+
+    lateinit var m : DoubleArray
+    lateinit var m2 : DoubleArray
+
     /** Helper function used to save a [CombinedCaptureResult] into a [File] */
     private suspend fun saveResult(result: CombinedCaptureResult): File = suspendCoroutine { cont ->
         when (result.format) {
@@ -489,35 +432,15 @@ class CameraFragment : Fragment() {
             ImageFormat.JPEG, ImageFormat.DEPTH_JPEG -> {
                 val buffer = result.image.planes[0].buffer
                 val bytes = ByteArray(buffer.remaining()).apply { buffer.get(this) }
-                //Rotacion de 90 grados solo por comodidad
-                val myFirstBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                //Consigo el bitmap y leo los datos
                 var matrix = rotationMatrix(90f) //las matrices rotan bitmaps
+                myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                myBitmap = Bitmap.createBitmap(myBitmap, 0, 2*myBitmap.height/5, myBitmap.width, myBitmap.height/5, matrix, true)
 
-                val myBitmap = Bitmap.createBitmap(myFirstBitmap, 0, 2*myFirstBitmap.height/5, 4*myFirstBitmap.width/5, myFirstBitmap.height/5, matrix, true)
-                val tita = args.tita
-                val b= args.b
-                matrix = rotationMatrix(tita)
-                bitmapRotado = Bitmap.createBitmap(myBitmap, 0, 0, myBitmap.width, myBitmap.height, matrix, true) //creo un bitmap pero rotado
-                alto = bitmapRotado.height
-                halto = alto.div(2.0).toInt() 
-                var valor = 0
-                var nosec = 0
-                for (j in b.toInt()-5..b.toInt()+5) {
-                    for (i in 2*alto.div(3) until alto) {
-                        aargb = bitmapRotado.getPixel(j, i)
-                        valor += ((Color.red(aargb) + Color.blue(aargb) + Color.green(aargb)))
-                        nosec++
-                    }
-                }
-                valor = valor.div(nosec)
-                intens = valor
-                //Entre 2 y 89 se encuentra el comportamiento lineal
-                if (intens in 10..150){
-                    intensidad.add(intens.toDouble())
-                    tiempos.add((exposureTime*1e-5))
-                }
-                intensidadTodos.add(intens.toDouble())
-                tiemposTodos.add((exposureTime*1e-5))
+
+
+
+
                 try {
                     val output = createFile(requireContext(), "jpg")
                     FileOutputStream(output).use { it.write(bytes) }
@@ -595,4 +518,7 @@ class CameraFragment : Fragment() {
             return File(context.filesDir, "IMG_${sdf.format(Date())}.$extension")
         }
     }
+
+
+
 }

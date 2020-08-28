@@ -1,20 +1,5 @@
 package com.example.android.camera2.basic.fragments
 
-/*
- * Copyright 2020 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -81,17 +66,18 @@ class LongOndaFragment : Fragment() {
 
     //declaro e inicio variables
     var tita = 0f //si se llama tita. deberia ser mas descriptivo
+    var posHorizontalEspectro = 100f
     var valor = FloatArray(1000) //wtf esto es el vector con las intensidades
     var alto =  100
-    lateinit var canvasParaEditar: Canvas //para enchular los bitmaps hay que hacer esto
-    lateinit var poneleColor: Paint //para ponerle colores
+    lateinit var myBitmap: Bitmap
     var relacionPixelYLongOnda = 2f
     var primerMaximo = 0
     var ordenCero = 0
+    lateinit var h: FloatArray
 
 
     /** AndroidX navigation arguments */
-    private val args: CameraFragmentArgs by navArgs()
+    private val args: LongOndaFragmentArgs by navArgs()
 
     /** Host's navigation controller */
     private val navController: NavController by lazy {
@@ -193,8 +179,22 @@ class LongOndaFragment : Fragment() {
                 orientation -> Log.d(TAG, "Orientation changed: $orientation")
             })
         }
-    }
+        btn_mostrar.setOnClickListener(
+                {
+                    Navigation.findNavController(requireActivity(), R.id.fragment_container)
+                            .navigate(LongOndaFragmentDirections.
+                            actionLongOndaFragmentToMedicionFragment(args.cameraId, args.pixelFormat, args.tita,
+                                    args.b, args.h, relacionPixelYLongOnda, ordenCero))
+                    //Navigation.findNavController(requireActivity(), R.id.fragment_container)
+                      //   .navigate(LongOndaFragmentDirections
+                        //  .actionLongOndaFragmentToImagenEspectroFragment(myBitmap, args.tita, args.b))
 
+                    println("soon")
+
+
+                }
+        )
+    }
 
 
     /**
@@ -329,7 +329,9 @@ class LongOndaFragment : Fragment() {
             }
         }, handler)
     }
-    var tmin: Long? = 10000000L
+
+    var exposureTime = 100_000_000L
+
 
     /**
      * Helper function used to capture a still image using the [CameraDevice.TEMPLATE_STILL_CAPTURE]
@@ -354,43 +356,13 @@ class LongOndaFragment : Fragment() {
         val captureRequest = session.device.createCaptureRequest(
                 CameraDevice.TEMPLATE_STILL_CAPTURE).apply { addTarget(imageReader.surface) }
 
-
-        //Invento mio
-
-        //Leo el rango de texp posible y defino los limites
-        val rangoS = characteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)
-        tmin = rangoS?.lower  //tomo el tiempo de exposicion mas chico asi no explota
-        println("tmin = $tmin")
-        //val captureBuilder = session.device.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
-
-        //captureBuilder.addTarget(surface!!)
-        captureRequest.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
-        //captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
-        /**
-        if (x < n/2) {
-        if (tmin != null && t != null) {
-        x++
-        exposureTime = tmin+ t *x
-
-
-        }
-        }
-         */
-
-
-
-        //Lo seteo
-        captureRequest.set(CaptureRequest.SENSOR_EXPOSURE_TIME, tmin) // en nanoSec
-        captureRequest.set(CaptureRequest.SENSOR_SENSITIVITY, 25) //algo fijo
-        println("texp= $tmin")
-        //captureBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION, frameDuration)
-
-        //ajustar AWB y AF al modo OFF
+	captureRequest.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+        val exposureTime = 100_000_000L
+        captureRequest.set(CaptureRequest.SENSOR_EXPOSURE_TIME, exposureTime) // en nanoSec
+        captureRequest.set(CaptureRequest.SENSOR_SENSITIVITY, 100) //algo fijo
         captureRequest.set(CaptureRequest.CONTROL_AWB_LOCK, false )
         captureRequest.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
 
-
-        //ya saca esa maldita foto
         session.capture(captureRequest.build(), object : CameraCaptureSession.CaptureCallback() {
 
             override fun onCaptureStarted(
@@ -458,6 +430,7 @@ class LongOndaFragment : Fragment() {
     }
 
 
+    lateinit var m : DoubleArray
 
     /** Helper function used to save a [CombinedCaptureResult] into a [File] */
     private suspend fun saveResult(result: CombinedCaptureResult): File = suspendCoroutine { cont ->
@@ -467,39 +440,25 @@ class LongOndaFragment : Fragment() {
             ImageFormat.JPEG, ImageFormat.DEPTH_JPEG -> {
                 val buffer = result.image.planes[0].buffer
                 val bytes = ByteArray(buffer.remaining()).apply { buffer.get(this) }
+                var matrix = rotationMatrix(90f)
                 //Consigo el bitmap y leo los datos
-                val myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                val autorotar = Autorotar(myBitmap) //instanceo una clasesita para autorotar
-                tita = autorotar.tita //que facil hacer esto bien ahi
-                val m = autorotar.m //pendienteee (y coordenada de origen, mal nombre la verdad)
-                val matrix = rotationMatrix(tita) //las matrices rotan bitmaps
+                myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                myBitmap = Bitmap.createBitmap(myBitmap, 0, 2*myBitmap.height/5, myBitmap.width, myBitmap.height/5, matrix, true)
+                tita = args.tita
+                posHorizontalEspectro = args.b
+                matrix = rotationMatrix(tita)
                 val bitmapRotado = Bitmap.createBitmap(myBitmap, 0, 0, myBitmap.width, myBitmap.height, matrix, true) //creo un bitmap pero rotado
                 alto = bitmapRotado.height
                 valor = FloatArray(alto)
-                for (i in 0..alto - 1) {
-                    var aargb = bitmapRotado.getPixel(m[1].toInt(), i)
-                    valor[i] =
-                            ((Color.red(aargb) + Color.blue(aargb) + Color.green(aargb))).toFloat()
+                for (i in 0 until alto) {
+                    val aargb = bitmapRotado.getPixel(posHorizontalEspectro.toInt(), i)
+                    valor[i] = correcionIntensidad(((Color.red(aargb) + Color.blue(aargb) + Color.green(aargb))).toDouble()).toFloat()
                 }
                 val calibrar = CalibrarLongOnda() //instanceo una clase para calibrar
                 calibrar.maxMinFinder(valor)
                 ordenCero = calibrar.ordenCero
                 primerMaximo = calibrar.primerMaximo
-                relacionPixelYLongOnda = 450f/(primerMaximo-ordenCero) //en nm/pixels
-
-                canvasParaEditar = Canvas(bitmapRotado) //lo necesito para graficar una recta sobre el bitmap
-                poneleColor = Paint() //variable del color y otras cosillas
-                poneleColor.color = Color.argb(255, 0, 100, 255) //azul como el mar azul
-                canvasParaEditar.drawLine(m[1], 0f, m[1], bitmapRotado.height.toFloat(), poneleColor)
-                println("tita= $tita")
-                println("$relacionPixelYLongOnda nm/pixel")
-
-
-
-
-
-
-
+                relacionPixelYLongOnda = 660f/(primerMaximo-ordenCero) //en nm/pixels
 
                 try {
                     val output = createFile(requireContext(), "jpg")
@@ -578,36 +537,12 @@ class LongOndaFragment : Fragment() {
             return File(context.filesDir, "IMG_${sdf.format(Date())}.$extension")
         }
     }
-}
 
-
-private fun linregress(x: MutableList<Int>, y: MutableList<Int>): FloatArray {
-    var avgY = 0.0f
-    var avgX = 0.0f
-    var covXY = 0.0f
-    var varX = 0.0f
-
-    for (i in 0 until x.size) {
-        avgY += y[i]
-        avgX += x[i]
-
-
-    }
-    avgX /= (x.size)
-    avgY /= (x.size)
-
-    for (i in 0 until x.size) {
-        covXY += (y[i] - avgY)*(x[i] - avgX)
-        varX += (x[i]-avgX).pow(2)
-
-
+    fun correcionIntensidad(V:Double): Double{
+        val a = args.h[2]
+        val b = args.h[1]
+        val c = args.h[0]
+        return a*V*V+b*V+c
     }
 
-    val p = FloatArray(2)
-    p[0] = covXY/varX
-    p[1] = avgY - p[0]*avgX
-
-    return p
-
-    //funcion K?
 }

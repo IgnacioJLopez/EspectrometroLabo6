@@ -12,16 +12,16 @@ class CalibrarLongOnda() {
 
     fun maxMinFinder(intensidades: FloatArray) {
 
-        var ancho = 7 //ancho con el que defino que un punto es un maximo o minimo
+        val ancho = 7 //ancho con el que defino que un punto es un maximo o minimo
         for (i in ancho+1..intensidades.size - (ancho+1)) {
             if (intensidades[i] >= intensidades.sliceArray(i-ancho..i-1).max()!! &&
-                intensidades[i] >= intensidades.sliceArray(i+1..i+ancho).max()!! && intensidades[i] > 30)
+                intensidades[i] >= intensidades.sliceArray(i+1..i+ancho).max()!! && intensidades[i] > 80)
             {
                 println("max en $i de ${intensidades[i]}")
                 posicionesMaximos.add(i)
 
-                if(intensidades[i]>250){
-                    indiceOrdenCero++
+                if(intensidades[i]>700){
+                    indiceOrdenCero = posicionesMaximos.size-1
                 }
             }
 
@@ -33,12 +33,10 @@ class CalibrarLongOnda() {
             }
         }
 
-        ordenCero = posicionesMaximos[indiceOrdenCero/2]
-        primerMaximo = posicionesMaximos[indiceOrdenCero]
+        ordenCero = posicionesMaximos[indiceOrdenCero]
+        primerMaximo = posicionesMaximos.last()
 
     }
 
-
-    //eso es igual a lambda*nrodelineas/mm supongo que es mil
 
 }

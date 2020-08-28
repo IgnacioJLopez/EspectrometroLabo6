@@ -2,51 +2,45 @@ package com.example.calibrarlongituddeonda
 
 import android.graphics.Bitmap
 import android.graphics.Color
-import org.json.JSONException
-import org.json.JSONObject
-import kotlin.math.pow
 
 class Autorotar (myBitmap: Bitmap){
 
     private var alto = myBitmap.height
     private val ancho = myBitmap.width
 
+    fun pendiente(myBitmap: Bitmap): DoubleArray{
+        val intensidad = IntArray(ancho)
+        val maximosI = arrayListOf<Double>()
+        val maximosX = arrayListOf<Double>()
+        val maximosY = arrayListOf<Double>()
 
-
-    fun pendiente(myBitmap: Bitmap): FloatArray{
-        var intensidad = FloatArray(ancho)
-        var maximosI = arrayListOf<Float>()
-        var maximosX = arrayListOf<Int>()
-        var maximosY = arrayListOf<Int>()
-
-        for(y in 0..alto-1) {
-            var iteradorI = 0.0f
+        for(y in 0 until (alto-1)/10) {
+            var iteradorI = 0
             var iteradorX = 0
-            for (x in 0..ancho-1) {
-                var argb = myBitmap.getPixel(x, y)
-                intensidad[x] = (0.33 * (Color.red(argb) + Color.blue(argb) + Color.green(argb))).toFloat()
-                if (intensidad[x] > iteradorI && intensidad[x] > 120/3) {
+            for (x in 0 until ancho-1) { //Ahora mas rapido
+                val argb = myBitmap.getPixel(x, 10*y)
+                intensidad[x] = (Color.red(argb) + Color.blue(argb) + Color.green(argb))
+                if (intensidad[x] > iteradorI && intensidad[x] > 127) {
                     iteradorI = intensidad[x]
                     iteradorX = x
                 }
             }
 
             if (iteradorI > 0) {
-                maximosX.add(iteradorX)
-                maximosY.add(y)
-                maximosI.add(iteradorI)
+                maximosX.add(iteradorX.toDouble())
+                maximosY.add(10*y.toDouble())
+                maximosI.add(iteradorI.toDouble())
+
             }
+
         }
 
-        val regresionLineal = RegresionLineal()
-        var m = regresionLineal.linRegressInt(maximosY, maximosX)
-        println("m = ${m[0]}")
-        println("b = ${m[1]}")
+        val regresion = Regresion()
+        val m = regresion.getPolynomialFitter(maximosY, maximosX,1)
         return m
     }
-
     var m  = pendiente(myBitmap)
 
-    var tita = 180*kotlin.math.atan(m[0])/3.1416f
+    var tita = 180*kotlin.math.atan(m[1])/3.1416
 
 }

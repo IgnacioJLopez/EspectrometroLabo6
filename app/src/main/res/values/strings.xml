@@ -19,4 +19,5 @@
     <string name="btn_intensidad">Calibrar Intensidad</string>
     <string name="btn_longonda">Calibrar Longitud de Onda</string>
     <string name="btn_medicion">Realizar Medición</string>
+    <string name="btn_autorotar">Alinear</string>
 </resources>
