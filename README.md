@@ -1,15 +1,18 @@
 
-Android Camera2Basic Sample
+Espectrometria con smartphones
 ===========================
 
-This sample demonstrates using the Camera2 API to capture a JPEG, DEPTH or RAW frame.
-Check the source code to see a simple example of how to display the camera preview
-and capture a still image using the default configuration with the selected pixel
-format.
+Esta aplicación fue desarrollada en el marco de la materia Laboratorio 6 de la
+Facultad de Ciencias Exactas y Naturales de la Universidad de Buenos Aires.
+En el Laboratorio de Óptica y Fotónica del Departamento de Física.
 
-Introduction
+Introducción
 ------------
 
+Espectrometria con smartphones hace posible medir espectros relativos en
+telefonos celulares con calibraciones y correcciones automaticas. Se adaptó
+el ejemplo de Camera2 de la documentación de Android para poder controlar 
+la cámara.
 The [Camera2 API][1] allows users to capture RAW images, i.e. unprocessed pixel data
 directly from the camera sensor that has not yet been converted into a format and
 colorspace typically used for displaying and storing images viewed by humans.  The
@@ -22,30 +25,8 @@ file for each image captured.
 [1]: https://developer.android.com/reference/android/hardware/camera2/package-summary.html
 [2]: https://developer.android.com/reference/android/hardware/camera2/DngCreator.html
 
-Pre-requisites
---------------
-
-- Android SDK 29+
-- Android Studio 3.5+
 
 Screenshots
 -------------
 
 <img src="screenshots/main.png" height="400" alt="Screenshot"/> 
-
-Getting Started
----------------
-
-This sample uses the Gradle build system. To build this project, use the
-"gradlew build" command or use "Import Project" in Android Studio.
-
-Support
--------
-
-- Stack Overflow: http://stackoverflow.com/questions/tagged/android
-
-If you've found an error in this sample, please file an issue:
-https://github.com/android/camera-samples
-
-Patches are encouraged, and may be submitted by forking this project and
-submitting a pull request through GitHub. Please see CONTRIBUTING.md for more details.
